@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  moy-nalog:
+    build: .
+    image: moy-nalog:local
+    environment:
+      - MOYNALOG_LOG_LEVEL=${MOYNALOG_LOG_LEVEL:-INFO}
+      - MOYNALOG_LOG_FORMAT=${MOYNALOG_LOG_FORMAT:-text}
+      - MOYNALOG_HTTP_DEBUG=${MOYNALOG_HTTP_DEBUG:-}
+      - MOYNALOG_TOKEN_FILE=${MOYNALOG_TOKEN_FILE:-}
+      - MOYNALOG_TIMEOUT=${MOYNALOG_TIMEOUT:-15}
+    volumes:
+      - ${HOME}/.config/moy-nalog:/root/.config/moy-nalog
+      - ./logs:/logs
+    entrypoint: ["moy-nalog"]
+    # Override command per task, e.g.:
+    # command: ["user"]
+

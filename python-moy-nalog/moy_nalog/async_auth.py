@@ -5,6 +5,7 @@ from typing import Optional, Dict, Any
 import httpx
 
 from .models import DeviceInfo
+from .logging_utils import get_logger
 
 
 class AsyncAuth:
@@ -12,11 +13,13 @@ class AsyncAuth:
         self._client = client
         self._device = device
         self._token: Optional[Dict[str, Any]] = None
+        self._log = get_logger()
 
     def set_token(self, token_json: str) -> None:
         import json
 
         self._token = json.loads(token_json) if token_json else None
+        self._log.debug("token set (redacted)")
 
     def auth_header(self) -> Dict[str, str]:
         if not self._token:
@@ -30,6 +33,7 @@ class AsyncAuth:
         if not refresh:
             return None
 
+        self._log.info("401 received, attempting token refresh")
         r = await self._client.post(
             "/auth/token",
             json={
@@ -39,10 +43,11 @@ class AsyncAuth:
             headers={"Referrer": "https://lknpd.nalog.ru/auth/login"},
         )
         if r.status_code != 200:
+            self._log.warning("token refresh failed: status=%s", r.status_code)
             return None
 
         self.set_token(r.text)
+        self._log.info("token refreshed successfully, retrying request")
         headers = dict(req.headers)
         headers.update(self.auth_header())
         return await self._client.request(req.method, req.url, headers=headers, content=req.content)
-

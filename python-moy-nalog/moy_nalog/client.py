@@ -11,6 +11,7 @@ from .auth import Auth
 from .errors import raise_for_status
 from .models import DeviceInfo, User, IncomeItem, UA
 from .constants import DEFAULT_BASE_URL
+from .logging_utils import get_logger, redact_headers, http_debug_enabled
 from .utils import utcnow_iso
 
 
@@ -41,6 +42,7 @@ class ApiClient:
         self.retries = retries
         self.retry_statuses = set(retry_statuses)
         self.retry_backoff_base = retry_backoff_base
+        self._log = get_logger()
 
     def close(self) -> None:
         self.client.close()
@@ -53,6 +55,7 @@ class ApiClient:
 
     # -------- Auth --------
     def create_new_access_token(self, username: str, password: str) -> str:
+        self._log.info("auth by INN/password started")
         r = self.client.post(
             "/auth/lkfl",
             json={
@@ -64,9 +67,11 @@ class ApiClient:
         )
         if r.status_code >= 400:
             raise_for_status(r.status_code, r.text)
+        self._log.info("auth by INN/password success")
         return r.text
 
     def create_phone_challenge(self, phone: str) -> Dict[str, Any]:
+        self._log.info("phone challenge start requested")
         r = self.client.post(
             "/auth/challenge/sms/start",
             json={"phone": phone, "requireTpToBeActive": True},
@@ -74,9 +79,11 @@ class ApiClient:
         )
         if r.status_code >= 400:
             raise_for_status(r.status_code, r.text)
+        self._log.info("phone challenge issued")
         return r.json()
 
     def create_new_access_token_by_phone(self, phone: str, challenge_token: str, verification_code: str) -> str:
+        self._log.info("phone verify requested")
         r = self.client.post(
             "/auth/challenge/sms/verify",
             json={
@@ -89,6 +96,7 @@ class ApiClient:
         )
         if r.status_code >= 400:
             raise_for_status(r.status_code, r.text)
+        self._log.info("phone verify success")
         return r.text
 
     def authenticate(self, access_token_json: str) -> None:
@@ -99,7 +107,23 @@ class ApiClient:
         headers.update(self.auth.auth_header())
         attempts = 0
         while True:
+            self._log.debug("request", extra={"method": method, "url": url})
+            start_ns = time.perf_counter_ns()
             resp = self.client.request(method, url, headers=headers, **kw)
+            elapsed_ms = round((time.perf_counter_ns() - start_ns) / 1_000_000, 2)
+            self._log.debug("response", extra={"method": method, "url": url, "status": resp.status_code, "elapsed_ms": elapsed_ms})
+            if http_debug_enabled():
+                try:
+                    self._log.debug(
+                        "request-headers",
+                        extra={"method": method, "url": url, "headers": redact_headers({k: v for k, v in headers.items() if isinstance(v, str)})},
+                    )
+                    self._log.debug(
+                        "response-headers",
+                        extra={"method": method, "url": url, "status": resp.status_code, "headers": redact_headers(dict(resp.headers))},
+                    )
+                except Exception:
+                    pass
             if resp.status_code == 401:
                 retry = self.auth.refresh_if_401(resp.request, resp)
                 if retry is not None:
@@ -109,6 +133,13 @@ class ApiClient:
                     raise_for_status(resp.status_code, resp.text)
                 return resp
             delay = self.retry_backoff_base * (2 ** attempts) + random.uniform(0, 0.1)
+            self._log.warning("retrying request", extra={
+                "method": method,
+                "url": url,
+                "status": resp.status_code,
+                "attempt": attempts + 1,
+                "delay": round(delay, 3),
+            })
             time.sleep(delay)
             attempts += 1
 

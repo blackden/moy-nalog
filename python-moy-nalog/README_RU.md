@@ -19,6 +19,10 @@ pip install -e .
 pip install -e .[dev]
 ```
 
+Логи
+- CLI поддерживает ключи `--log-level` и `--log-file`.
+- По умолчанию пишет в stdout; при указании файла — в него (убедитесь, что настроен rotation).
+
 ## Быстрый старт (sync)
 ```python
 from decimal import Decimal
@@ -57,6 +61,10 @@ async def main():
 asyncio.run(main())
 ```
 
+Логирование в коде
+- Библиотека логирует события под именем логгера `moy_nalog` (запросы/ответы, ретраи, обновление токена).
+- Секреты (Authorization, token, refreshToken, password, code) не логируются — автоматически редактируются.
+
 ## Отмена чека
 ```python
 from moy_nalog import ApiClient, constants
@@ -80,6 +88,31 @@ pip install -e .[dev]
 pytest -q
 ```
 
+## Docker и логротэйт
+Собрать образ:
+```
+cd python-moy-nalog
+docker build -t moy-nalog:local .
+```
+Запуск с сохранением токена:
+```
+docker run --rm -it \
+  -v $HOME/.config/moy-nalog:/root/.config/moy-nalog \
+  moy-nalog:local user
+```
+Логи в Docker:
+- Рекомендуется писать в stdout (по умолчанию), Docker управляет логами.
+- Если используете `--log-file /logs/app.log`, примонтируйте volume и настройте logrotate на хосте, например `/etc/logrotate.d/moy-nalog`:
+```
+/var/log/moy-nalog/*.log {
+  daily
+  rotate 7
+  compress
+  missingok
+  copytruncate
+}
+```
+
 ## Что такое pyproject.toml
 Файл конфигурации сборки и метаданных проекта (PEP 518/621). В нём описаны:
 - имя, версия, описание пакета
@@ -96,4 +129,3 @@ pytest -q
 - задавайте разумные таймауты и ретраи
 
 Подробнее — см. `NOTES_RU.md`.
-

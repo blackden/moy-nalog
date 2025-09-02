@@ -31,6 +31,32 @@ moy-nalog create-income \
 ```
 Ответ вернёт JSON с `approvedReceiptUuid`.
 
+## 4.1. Создать чек с несколькими позициями
+Вариант A — повторяйте `--item name,amount,quantity`:
+```
+moy-nalog create-income-multi \
+  --item "Услуга A,100.00,1" \
+  --item "Услуга B,50.50,2"
+```
+Вариант B — из JSON‑файла:
+```
+cat items.json
+[
+  {"name": "Услуга A", "amount": 100.0, "quantity": 1},
+  {"name": "Услуга B", "amount": 50.5, "quantity": 2}
+]
+moy-nalog create-income-multi --items-file items.json
+```
+
+Дополнительно можно задать время операции:
+```
+# Явная дата/время в ISO (с часовым поясом)
+moy-nalog create-income-multi --items-file items.json --operation-time "2025-01-31T12:00:00+03:00"
+
+# Или без пояса + указать таймзону (будет проставлена)
+moy-nalog create-income-multi --items-file items.json --operation-time "2025-01-31T12:00:00" --timezone Europe/Moscow
+```
+
 ## 5. Отменить чек
 ```
 # По умолчанию причина: "Чек сформирован ошибочно"
@@ -43,6 +69,21 @@ moy-nalog cancel-income --uuid <RECEIPT_UUID> --refund
 ## 6. Получить JSON чека
 ```
 moy-nalog receipt-json --uuid <RECEIPT_UUID> --inn <ВАШ_ИНН>
+```
+
+## 6.1. Получить ссылку для печати чека
+```
+moy-nalog receipt-print-url --uuid <RECEIPT_UUID> --inn <ВАШ_ИНН>
+```
+
+## 6.2. Логин по номеру телефона
+Шаг 1 — запросить SMS и получить `challengeToken`:
+```
+moy-nalog phone-start --phone 79000000000 --challenge-file /tmp/challenge.txt
+```
+Шаг 2 — подтвердить код из SMS и сохранить токен:
+```
+moy-nalog phone-verify --phone 79000000000 --code 123456 --challenge-file /tmp/challenge.txt
 ```
 
 ## 7. Запуск в Docker
@@ -79,4 +120,3 @@ docker run --rm -it \
 - Добавить команды phone‑flow (логин по номеру и коду из SMS).
 - Поддержать создание чеков с несколькими позициями.
 - Команду печати/ссылки на чек.
-

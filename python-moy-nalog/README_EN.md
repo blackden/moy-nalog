@@ -19,6 +19,10 @@ pip install -e .
 pip install -e .[dev]
 ```
 
+Logging
+- CLI supports `--log-level` and `--log-file`.
+- Defaults to stdout; when a file is provided, ensure proper rotation.
+
 ## Quick Start (sync)
 ```python
 from decimal import Decimal
@@ -52,6 +56,10 @@ async def main():
 asyncio.run(main())
 ```
 
+Library logging
+- The library logs under logger name `moy_nalog` (requests/responses, retries, token refresh).
+- Secrets (Authorization, token, refreshToken, password, code) are redacted automatically.
+
 ## Retries & timeouts
 - By default up to 2 retries for 429/5xx with exponential backoff.
 - Tune via `retries`, `retry_statuses`, `retry_backoff_base`, `timeout`.
@@ -62,10 +70,34 @@ pip install -e .[dev]
 pytest -q
 ```
 
+## Docker & logrotate
+Build image:
+```
+cd python-moy-nalog
+docker build -t moy-nalog:local .
+```
+Run with token persistence:
+```
+docker run --rm -it \
+  -v $HOME/.config/moy-nalog:/root/.config/moy-nalog \
+  moy-nalog:local user
+```
+Logs in Docker:
+- Prefer writing to stdout (default), Docker manages logs.
+- If using `--log-file /logs/app.log`, mount a volume and set up logrotate on the host, e.g. `/etc/logrotate.d/moy-nalog`:
+```
+/var/log/moy-nalog/*.log {
+  daily
+  rotate 7
+  compress
+  missingok
+  copytruncate
+}
+```
+
 ## What is pyproject.toml?
 PEP 518/621 configuration for project metadata and build settings:
 - package name/version/description, Python requirements
 - runtime and optional dev dependencies
 - build backend (setuptools)
 - classifiers and links
-
