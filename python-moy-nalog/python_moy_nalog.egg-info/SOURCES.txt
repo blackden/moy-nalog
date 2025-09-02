@@ -1,0 +1,17 @@
+README.md
+pyproject.toml
+moy_nalog/__init__.py
+moy_nalog/async_auth.py
+moy_nalog/async_client.py
+moy_nalog/auth.py
+moy_nalog/client.py
+moy_nalog/constants.py
+moy_nalog/errors.py
+moy_nalog/models.py
+moy_nalog/utils.py
+python_moy_nalog.egg-info/PKG-INFO
+python_moy_nalog.egg-info/SOURCES.txt
+python_moy_nalog.egg-info/dependency_links.txt
+python_moy_nalog.egg-info/requires.txt
+python_moy_nalog.egg-info/top_level.txt
+tests/test_client_basic.py

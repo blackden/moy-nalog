@@ -1,0 +1,22 @@
+Metadata-Version: 2.4
+Name: python-moy-nalog
+Version: 0.2.0
+Summary: Unofficial Python client for lknpd.nalog.ru (Moy Nalog) API
+Author-email: Ported by Codex <devnull@example.com>
+License: MIT
+Project-URL: Homepage, https://lknpd.nalog.ru/
+Project-URL: Repository, https://github.com/your-org/python-moy-nalog
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Topic :: Software Development :: Libraries
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: httpx>=0.26.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.20; extra == "dev"
+
+See detailed docs:
+- Russian: README_RU.md
+- English: README_EN.md
